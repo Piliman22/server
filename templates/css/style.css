@@ -1,0 +1,72 @@
+.yuji-mai-regular {
+    font-family: "Yuji Mai", serif;
+    font-weight: 400;
+    font-style: normal;
+    color: rgb(126, 113, 96);
+}
+
+.noto-sans-jp-regular {
+    font-family: "Noto Sans JP", sans-serif;
+    font-optical-sizing: auto;
+    font-weight: 400;
+    font-style: normal;
+}
+
+/* ↑ GoogleFont setting */
+
+header {
+    display: flex;
+    justify-content: space-around;
+    padding: 40px;
+    border-bottom: 3px dotted #6d4621;
+    background-color: aliceblue;
+}
+
+header a {
+    text-decoration: none;
+    color: #000;
+}
+
+header ul {
+    list-style: none;
+    display: flex;
+}
+
+header li {
+    display: inline;
+    margin: 0 50px;
+}
+
+header h1 {
+    font-size: 2.0rem;
+}
+
+main {
+    text-align: center;
+    padding: 20px 0;
+}
+
+main p {
+    margin: 40px 300px 0px 300px;
+}
+
+.wrapper {
+    min-height: 50vh;
+    position: relative;
+}
+
+footer {
+    text-align: center;
+    color: rgb(104, 101, 101);
+    background-color: darkgray;
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    left: 0;
+    bottom: 0;
+}
+
+footer a {
+    text-decoration: none;
+    color: rgb(54, 54, 54);
+}

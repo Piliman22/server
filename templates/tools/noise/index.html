@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ノイズ生成ツール</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f9f9f9;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+        }
+
+        label {
+            display: block;
+            margin: 15px 0 5px;
+            font-weight: bold;
+        }
+
+        input, button {
+            padding: 8px 12px;
+            margin: 10px 0;
+            font-size: 16px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        #advanced-settings {
+            display: none;
+            background-color: #eef;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 15px;
+        }
+
+        #toggle-settings {
+            margin-top: 20px;
+            padding: 10px 18px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+        }
+
+        button.generate {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        button.download {
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            padding: 10px 18px;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>ノイズ生成ツール</h1>
+
+    <section id="basic-settings">
+        <label for="measure">小節数を設定:</label>
+        <input type="number" id="measure" min="1" value="1">
+
+        <label for="beat-division">小節を何等分するか（例: 2, 4, 8）:</label>
+        <input type="number" id="beat-division" min="1" value="2">
+
+        <label for="size">幅を設定（1から12）:</label>
+        <input type="number" id="size" min="1" max="12" value="3">
+    </section>
+
+    <button id="toggle-settings" onclick="toggleAdvancedSettings()">詳細設定</button>
+
+    <section id="advanced-settings">
+        <label for="disable-decimal">少数を無効:</label>
+        <input type="checkbox" id="disable-decimal">
+
+        <label for="visible-ticks">中継点を見えるようにする:</label>
+        <input type="checkbox" id="visible-ticks">
+
+        <label for="critical-start">クリティカルをオンにする:</label>
+        <input type="checkbox" id="critical-start">
+
+        <label for="expand-left">左に拡張:</label>
+        <input type="number" id="expand-left" min="0" value="0">
+
+        <label for="expand-right">右に拡張:</label>
+        <input type="number" id="expand-right" min="0" value="0">
+    </section>
+
+    <button class="generate" onclick="generateJSON()">生成</button>
+    <button class="download" onclick="downloadJSON()">ダウンロード</button>
+
+    <script>
+        function toggleAdvancedSettings() {
+            const advancedSettings = document.getElementById("advanced-settings");
+            advancedSettings.style.display = advancedSettings.style.display === "none" || advancedSettings.style.display === "" ? "block" : "none";
+        }
+
+        function generateJSON() {
+        const beatDivision = parseInt(document.getElementById("beat-division").value);
+        const userSize = parseFloat(document.getElementById("size").value);
+        const adjustedSize = userSize / 2;
+        const measure = parseInt(document.getElementById("measure").value);
+        const endBeat = 4 + (measure * 4);
+        const isVisibleTicks = document.getElementById("visible-ticks").checked;
+        const isCriticalStart = document.getElementById("critical-start").checked;
+        const disableDecimal = document.getElementById("disable-decimal").checked;
+
+        const sizeLaneMapping = {
+            0.5: [-6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6],
+            1.0: [-5.5, -4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5, 5.5],
+            1.5: [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5],
+            2.0: [-4.5, -3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5, 4.5],
+            2.5: [-4, -3, -2, -1, 0, 1, 2, 3, 4],
+            3.0: [-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5],
+            3.5: [-3, -2, -1, 0, 1, 2, 3],
+            4.0: [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5],
+            4.5: [-2, -1, 0, 1, 2],
+            5.0: [-1.5, -0.5, 0.5, 1.5],
+            5.5: [-1, 0, 1],
+            6.0: [-0.5, 0.5]
+        };
+
+        const getLane = () => {
+            if (disableDecimal && sizeLaneMapping[userSize]) {
+                const lanes = sizeLaneMapping[userSize];
+                const index = Math.floor(Math.random() * lanes.length);
+                return lanes[index];
+            }
+            return parseFloat((Math.random() * (5.5 - -5.5) + -5.5).toFixed(1));
+        };
+
+        const connections = [];
+        const startObj = {
+            beat: 4.0, critical: isCriticalStart, ease: "linear",
+            judgeType: "normal", lane: getLane(),
+            size: adjustedSize, timeScaleGroup: 0, type: "start"
+        };
+        connections.push(startObj);
+
+        for (let i = 1; i < beatDivision; i++) {
+            const beat = 4.0 + (i * (endBeat - 4.0) / beatDivision);
+            const tickObj = {
+                beat: parseFloat(beat.toFixed(3)), ease: "linear",
+                judgeType: "normal", lane: getLane(), size: adjustedSize,
+                timeScaleGroup: 0, type: "tick"
+            };
+            if (isVisibleTicks) tickObj.critical = false;
+
+            connections.push(tickObj);
+        }
+
+        const endObj = {
+            beat: endBeat, critical: false, judgeType: "normal",
+            lane: getLane(), size: adjustedSize,
+            timeScaleGroup: 0, type: "end"
+        };
+        connections.push(endObj);
+
+        const jsonData = {
+            usc: {
+                objects: [
+                    { beat: 0.0, bpm: 160.0, type: "bpm" },
+                    { changes: [{ beat: 0.0, timeScale: 1.0 }], type: "timeScaleGroup" },
+                    { connections, critical: false, type: "slide" }
+                ],
+                offset: -0.0
+            },
+            version: 2
+        };
+
+        document.querySelector('.download').style.display = 'inline-block';
+        document.querySelector('.generate').style.display = 'none';
+
+        return jsonData;
+    }
+
+    function downloadJSON() {
+        const data = JSON.stringify(generateJSON(), null, 2);
+        const blob = new Blob([data], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "noise.usc";
+        link.click();
+
+        URL.revokeObjectURL(url);
+    }
+    </script>
+</body>
+</html>
